@@ -3,6 +3,7 @@ package com.mogan.ecommerce;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -13,15 +14,21 @@ public class NewOrderMain {
 
         var producer = new KafkaProducer<String, String>(properties());
         var value = "123,1234,849490";
-        var record = new ProducerRecord<>("ECOMMERCE_NEW_ORDER", value, value);
+        var newOrder = new ProducerRecord<>("ECOMMERCE_NEW_ORDER", value, value);
 
-        producer.send(record, (data, ex) -> {
+        var email = "Thank you for you order! We are processing you order";
+        var sendEmail = new ProducerRecord<>("ECOMMERCE_SEND_EMAIL", email, email);
+
+        Callback callback = (data, ex) -> {
             if (ex != null) {
                 ex.printStackTrace();
                 return;
             }
             System.out.println("sucesso enviando " + data.topic() + ":::partition " + data.partition() + "/ offset " + data.offset() + "/ timestamp " + data.timestamp());
-        }).get();
+        };
+
+        producer.send(newOrder, callback).get();
+        producer.send(sendEmail, callback).get();
     }
 
     private static Properties properties() {
